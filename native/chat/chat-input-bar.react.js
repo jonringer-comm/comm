@@ -53,6 +53,7 @@ import {
 
 import Button from '../components/button.react';
 import ClearableTextInput from '../components/clearable-text-input.react';
+import { type CoreData, CoreDataContext } from '../data/core-data';
 import { type InputState, InputStateContext } from '../input/input-state';
 import { getKeyboardHeight } from '../keyboard/keyboard';
 import KeyboardInputHost from '../keyboard/keyboard-input-host.react';
@@ -111,7 +112,7 @@ type Props = {|
   ...BaseProps,
   // Redux state
   +viewerID: ?string,
-  +draft: string,
+  +coreData: CoreData,
   +joinThreadLoadingStatus: LoadingStatus,
   +threadCreationInProgress: boolean,
   +calendarQuery: () => CalendarQuery,
@@ -152,8 +153,11 @@ class ChatInputBar extends React.PureComponent<Props, State> {
 
   constructor(props: Props) {
     super(props);
+    const draft =
+      props.coreData.data.drafts[draftKeyFromThreadID(props.threadInfo.id)] ||
+      '';
     this.state = {
-      text: props.draft,
+      text: draft,
       buttonsExpanded: true,
     };
 
@@ -206,7 +210,7 @@ class ChatInputBar extends React.PureComponent<Props, State> {
       opacity: expandOpacity,
     };
 
-    const initialSendButtonContainerOpen = trimMessage(props.draft) ? 1 : 0;
+    const initialSendButtonContainerOpen = trimMessage(draft) ? 1 : 0;
     this.sendButtonContainerOpen = new Value(initialSendButtonContainerOpen);
     this.targetSendButtonContainerOpen = new Value(
       initialSendButtonContainerOpen,
@@ -549,7 +553,7 @@ class ChatInputBar extends React.PureComponent<Props, State> {
   };
 
   saveDraft = _throttle((text) => {
-    global.CommCoreModule.updateDraft({
+    this.props.coreData.setters.updateDraft({
       key: draftKeyFromThreadID(this.props.threadInfo.id),
       text,
     });
@@ -777,12 +781,7 @@ export default React.memo<BaseProps>(function ConnectedChatInputBar(
     [props.threadInfo.id, navContext],
   );
 
-  const draftKey = draftKeyFromThreadID(props.threadInfo.id);
-  const draft = React.useMemo(
-    () => global.CommCoreModule.getDraft(draftKey),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  const coreData = React.useContext(CoreDataContext);
 
   const viewerID = useSelector(
     (state) => state.currentUserInfo && state.currentUserInfo.id,
@@ -845,7 +844,7 @@ export default React.memo<BaseProps>(function ConnectedChatInputBar(
     <ChatInputBar
       {...props}
       viewerID={viewerID}
-      draft={draft}
+      coreData={coreData}
       joinThreadLoadingStatus={joinThreadLoadingStatus}
       threadCreationInProgress={threadCreationInProgress}
       calendarQuery={calendarQuery}
