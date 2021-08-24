@@ -110,13 +110,25 @@ function ChatContextProvider(props: Props): React.Node {
     setCurrentTransitionSidebarSourceID,
   ] = React.useState<?string>(null);
 
+  const currentChatInputBarHeight = React.useRef(0);
+  const setCurrentChatInputBarHeight = React.useCallback(
+    (height: number) => (currentChatInputBarHeight.current = height),
+    [],
+  );
+
   const contextValue = React.useMemo(
     () => ({
       registerMeasurer,
       currentTransitionSidebarSourceID,
       setCurrentTransitionSidebarSourceID,
+      currentChatInputBarHeight,
+      setCurrentChatInputBarHeight,
     }),
-    [currentTransitionSidebarSourceID, registerMeasurer],
+    [
+      currentTransitionSidebarSourceID,
+      registerMeasurer,
+      setCurrentChatInputBarHeight,
+    ],
   );
 
   const heightMeasurers = React.useMemo(
