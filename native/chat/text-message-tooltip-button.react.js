@@ -7,8 +7,10 @@ import type { AppNavigationProp } from '../navigation/app-navigator.react';
 import type { TooltipRoute } from '../navigation/tooltip.react';
 import { useSelector } from '../redux/redux-utils';
 import { InnerTextMessage } from './inner-text-message.react';
+import InputBarHeightMeasurer from './input-bar-height-measurer.react';
 import { MessageHeader } from './message-header.react';
 import { MessageListContextProvider } from './message-list-types';
+import { getSidebarThreadInfo } from './sidebar-navigation';
 import { useAnimatedMessageTooltipButton } from './utils';
 
 /* eslint-disable import/no-named-as-default-member */
@@ -24,6 +26,11 @@ function TextMessageTooltipButton(props: Props): React.Node {
   const { progress } = props;
   const windowWidth = useSelector(state => state.dimensions.width);
 
+  const [
+    sidebarInputBarHeight,
+    setSidebarInputBarHeight,
+  ] = React.useState<?number>(null);
+
   const { item, verticalBounds, initialCoordinates } = props.route.params;
   const {
     style: messageContainerStyle,
@@ -34,7 +41,7 @@ function TextMessageTooltipButton(props: Props): React.Node {
     initialCoordinates,
     messageListVerticalBounds: verticalBounds,
     progress,
-    targetDraftHeight: 0,
+    targetDraftHeight: sidebarInputBarHeight,
   });
 
   const headerStyle = React.useMemo(() => {
@@ -55,8 +62,30 @@ function TextMessageTooltipButton(props: Props): React.Node {
 
   const threadID = item.threadInfo.id;
   const { navigation } = props;
+
+  const viewerID = useSelector(
+    state => state.currentUserInfo && state.currentUserInfo.id,
+  );
+  const sidebarThreadInfo = React.useMemo(() => {
+    return getSidebarThreadInfo(item, viewerID);
+  }, [item, viewerID]);
+  const onInputBarMeasured = React.useCallback((height: number) => {
+    console.log('sidebar input bar height', height);
+    setSidebarInputBarHeight(height);
+  }, []);
+  let inputBarHeightMeasurer = null;
+  if (sidebarThreadInfo) {
+    inputBarHeightMeasurer = (
+      <InputBarHeightMeasurer
+        threadInfo={sidebarThreadInfo}
+        onInputBarMeasured={onInputBarMeasured}
+      />
+    );
+  }
+
   return (
     <MessageListContextProvider threadID={threadID}>
+      {inputBarHeightMeasurer}
       <Animated.View style={messageContainerStyle}>
         <Animated.View style={headerStyle}>
           <MessageHeader item={item} focused={true} display="modal" />

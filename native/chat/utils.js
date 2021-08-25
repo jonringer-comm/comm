@@ -197,7 +197,7 @@ type AnimatedMessageArgs = {
   +initialCoordinates: LayoutCoordinates,
   +messageListVerticalBounds: VerticalBounds,
   +progress: Node,
-  +targetDraftHeight: number,
+  +targetDraftHeight: ?number,
 };
 
 function useAnimatedMessageTooltipButton({
@@ -228,7 +228,7 @@ function useAnimatedMessageTooltipButton({
     initialCoordinates,
     messageListVerticalBounds,
     currentChatInputBarHeight.current,
-    targetDraftHeight,
+    targetDraftHeight ?? currentChatInputBarHeight.current,
   );
 
   React.useEffect(() => {
