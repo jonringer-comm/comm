@@ -799,6 +799,63 @@ const createThreadLoadingStatusSelector = createLoadingStatusSelector(
   newThreadActionTypes,
 );
 
+const asyncNoop = async () => {};
+export function DummyChatInputBar(props: BaseProps): React.Node {
+  const navContext = React.useContext(NavContext);
+  const keyboardState = React.useContext(KeyboardContext);
+  const inputState = React.useContext(InputStateContext);
+
+  const viewerID = useSelector(
+    state => state.currentUserInfo && state.currentUserInfo.id,
+  );
+  const { draft, updateDraft, moveDraft } = useDrafts(props.threadInfo.id);
+  const joinThreadLoadingStatus = useSelector(joinThreadLoadingStatusSelector);
+  const createThreadLoadingStatus = useSelector(
+    createThreadLoadingStatusSelector,
+  );
+  const threadCreationInProgress = createThreadLoadingStatus === 'loading';
+  const calendarQuery = useSelector(state =>
+    nonThreadCalendarQuery({
+      redux: state,
+      navContext,
+    }),
+  );
+  const nextLocalID = useSelector(state => state.nextLocalID);
+  const userInfos = useSelector(state => state.userStore.userInfos);
+  const colors = useColors();
+  const styles = useStyles(unboundStyles);
+  const isActive = React.useMemo(
+    () => props.threadInfo.id === activeThreadSelector(navContext),
+    [props.threadInfo.id, navContext],
+  );
+  const dispatch = useDispatch();
+  const dispatchActionPromise = useDispatchActionPromise();
+  const callJoinThread = useServerCall(joinThread);
+  return (
+    <ChatInputBar
+      {...props}
+      viewerID={viewerID}
+      draft={draft}
+      updateDraft={updateDraft}
+      moveDraft={moveDraft}
+      joinThreadLoadingStatus={joinThreadLoadingStatus}
+      threadCreationInProgress={threadCreationInProgress}
+      calendarQuery={calendarQuery}
+      nextLocalID={nextLocalID}
+      userInfos={userInfos}
+      colors={colors}
+      styles={styles}
+      isActive={isActive}
+      keyboardState={keyboardState}
+      dispatch={dispatch}
+      dispatchActionPromise={dispatchActionPromise}
+      joinThread={callJoinThread}
+      inputState={inputState}
+      openCamera={asyncNoop}
+    />
+  );
+}
+
 type ChatInputBarProps = {
   ...BaseProps,
   +navigation: ChatNavigationProp<'MessageList'>,
