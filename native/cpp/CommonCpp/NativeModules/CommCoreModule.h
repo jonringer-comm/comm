@@ -3,6 +3,7 @@
 #include "../CryptoTools/CryptoModule.h"
 #include "../Tools/CommSecureStore.h"
 #include "../Tools/WorkerThread.h"
+#include "CoreModuleInternal.h"
 #include "NativeModules.h"
 #include <jsi/jsi.h>
 #include <memory>
@@ -12,12 +13,9 @@ namespace comm {
 namespace jsi = facebook::jsi;
 
 class CommCoreModule : public facebook::react::CommCoreModuleSchemaCxxSpecJSI {
-  std::unique_ptr<WorkerThread> databaseThread;
-  std::unique_ptr<WorkerThread> cryptoThread;
-
-  CommSecureStore secureStore;
-  const std::string secureStoreAccountDataKey = "cryptoAccountDataKey";
-  std::unique_ptr<crypto::CryptoModule> cryptoModule;
+  std::shared_ptr<WorkerThread> databaseThread;
+  std::shared_ptr<WorkerThread> cryptoThread;
+  std::shared_ptr<CoreModuleInternal> coreModule;
 
   jsi::Value getDraft(jsi::Runtime &rt, const jsi::String &key) override;
   jsi::Value updateDraft(jsi::Runtime &rt, const jsi::Object &draft) override;
@@ -38,7 +36,7 @@ class CommCoreModule : public facebook::react::CommCoreModuleSchemaCxxSpecJSI {
   jsi::Value getUserPublicKey(jsi::Runtime &rt) override;
   jsi::Value getUserOneTimeKeys(jsi::Runtime &rt) override;
   void scheduleOrRun(
-      const std::unique_ptr<WorkerThread> &thread,
+      const std::shared_ptr<WorkerThread> &thread,
       const taskType &task);
 
 public:

@@ -18,7 +18,7 @@ jsi::Value CommCoreModule::getDraft(jsi::Runtime &rt, const jsi::String &key) {
           std::string error;
           std::string draftStr;
           try {
-            draftStr = DatabaseManager::getQueryExecutor().getDraft(keyStr);
+            draftStr = this->coreModule->getDraft(keyStr);
           } catch (std::system_error &e) {
             error = e.what();
           }
@@ -44,7 +44,7 @@ CommCoreModule::updateDraft(jsi::Runtime &rt, const jsi::Object &draft) {
         taskType job = [=, &innerRt]() {
           std::string error;
           try {
-            DatabaseManager::getQueryExecutor().updateDraft(keyStr, textStr);
+            this->coreModule->updateDraft(keyStr, textStr);
           } catch (std::system_error &e) {
             error = e.what();
           }
@@ -73,8 +73,7 @@ jsi::Value CommCoreModule::moveDraft(
           std::string error;
           bool result = false;
           try {
-            result = DatabaseManager::getQueryExecutor().moveDraft(
-                oldKeyStr, newKeyStr);
+            result = this->coreModule->moveDraft(oldKeyStr, newKeyStr);
           } catch (std::system_error &e) {
             error = e.what();
           }
@@ -98,7 +97,7 @@ jsi::Value CommCoreModule::getAllDrafts(jsi::Runtime &rt) {
           std::vector<Draft> draftsVector;
           size_t numDrafts;
           try {
-            draftsVector = DatabaseManager::getQueryExecutor().getAllDrafts();
+            draftsVector = this->coreModule->getAllDrafts();
             numDrafts = count_if(
                 draftsVector.begin(), draftsVector.end(), [](Draft draft) {
                   return !draft.text.empty();
@@ -136,7 +135,7 @@ jsi::Value CommCoreModule::removeAllDrafts(jsi::Runtime &rt) {
         taskType job = [=, &innerRt]() {
           std::string error;
           try {
-            DatabaseManager::getQueryExecutor().removeAllDrafts();
+            this->coreModule->removeAllDrafts();
           } catch (std::system_error &e) {
             error = e.what();
           }
@@ -158,7 +157,7 @@ jsi::Value CommCoreModule::removeAllMessages(jsi::Runtime &rt) {
         taskType job = [=, &innerRt]() {
           std::string error;
           try {
-            DatabaseManager::getQueryExecutor().removeAllMessages();
+            this->coreModule->removeAllMessages();
           } catch (std::system_error &e) {
             error = e.what();
           }
@@ -182,8 +181,7 @@ jsi::Value CommCoreModule::getAllMessages(jsi::Runtime &rt) {
           std::vector<Message> messagesVector;
           size_t numMessages;
           try {
-            messagesVector =
-                DatabaseManager::getQueryExecutor().getAllMessages();
+            messagesVector = this->coreModule->getAllMessages();
             numMessages = messagesVector.size();
           } catch (std::system_error &e) {
             error = e.what();
@@ -339,9 +337,7 @@ jsi::Value CommCoreModule::processMessageStoreOperations(
         taskType job = [=, &innerRt]() {
           std::string error;
           try {
-            for (const auto &operation : messageStoreOps) {
-              operation->execute();
-            }
+            this->coreModule->processMessageStoreOperations(messageStoreOps);
           } catch (std::system_error &e) {
             error = e.what();
           }
@@ -361,78 +357,22 @@ jsi::Value CommCoreModule::initializeCryptoAccount(
     jsi::Runtime &rt,
     const jsi::String &userId) {
   std::string userIdStr = userId.utf8(rt);
-  folly::Optional<std::string> storedSecretKey =
-      this->secureStore.get(this->secureStoreAccountDataKey);
-  if (!storedSecretKey.hasValue()) {
-    storedSecretKey = crypto::Tools::getInstance().generateRandomString(64);
-    this->secureStore.set(
-        this->secureStoreAccountDataKey, storedSecretKey.value());
-  }
 
   return createPromiseAsJSIValue(
       rt, [=](jsi::Runtime &innerRt, std::shared_ptr<Promise> promise) {
-        this->scheduleOrRun(this->databaseThread, [=, &innerRt]() {
-          crypto::Persist persist;
-          std::string error;
-          try {
-            folly::Optional<std::string> accountData =
-                DatabaseManager::getQueryExecutor().getOlmPersistAccountData();
-            if (accountData.hasValue()) {
-              persist.account =
-                  crypto::OlmBuffer(accountData->begin(), accountData->end());
-              // handle sessions data
-              std::vector<OlmPersistSession> sessionsData =
-                  DatabaseManager::getQueryExecutor()
-                      .getOlmPersistSessionsData();
-              for (OlmPersistSession &sessionsDataItem : sessionsData) {
-                crypto::OlmBuffer sessionDataBuffer(
-                    sessionsDataItem.session_data.begin(),
-                    sessionsDataItem.session_data.end());
-                persist.sessions.insert(std::make_pair(
-                    sessionsDataItem.target_user_id, sessionDataBuffer));
-              }
-            }
-          } catch (std::system_error &e) {
-            error = e.what();
-          }
-
-          this->scheduleOrRun(this->cryptoThread, [=, &innerRt]() {
-            std::string error;
-            this->cryptoModule.reset(new crypto::CryptoModule(
-                userIdStr, storedSecretKey.value(), persist));
-            if (persist.isEmpty()) {
-              crypto::Persist newPersist =
-                  this->cryptoModule->storeAsB64(storedSecretKey.value());
-              this->scheduleOrRun(this->databaseThread, [=, &innerRt]() {
-                std::string error;
-                try {
-                  DatabaseManager::getQueryExecutor().storeOlmPersistData(
-                      newPersist);
-                } catch (std::system_error &e) {
-                  error = e.what();
-                }
-                this->jsInvoker_->invokeAsync([=, &innerRt]() {
-                  if (error.size()) {
-                    promise->reject(error);
-                    return;
-                  }
-                  promise->resolve(jsi::Value::undefined());
-                });
-              });
-
-            } else {
-              this->cryptoModule->restoreFromB64(
-                  storedSecretKey.value(), persist);
-              this->jsInvoker_->invokeAsync([=, &innerRt]() {
+        this->coreModule->initializeCryptoAccount(
+            userIdStr,
+            this->databaseThread,
+            this->cryptoThread,
+            [&](const std::string &error) {
+              this->jsInvoker_->invokeAsync([&]() {
                 if (error.size()) {
                   promise->reject(error);
                   return;
                 }
                 promise->resolve(jsi::Value::undefined());
               });
-            }
-          });
-        });
+            });
       });
 }
 
@@ -442,10 +382,10 @@ jsi::Value CommCoreModule::getUserPublicKey(jsi::Runtime &rt) {
         taskType job = [=, &innerRt]() {
           std::string error;
           std::string result;
-          if (this->cryptoModule == nullptr) {
+          if (this->coreModule->cryptoModule == nullptr) {
             error = "user has not been initialized";
           } else {
-            result = this->cryptoModule->getIdentityKeys();
+            result = this->coreModule->getUserPublicKey();
           }
           this->jsInvoker_->invokeAsync([=, &innerRt]() {
             if (error.size()) {
@@ -465,10 +405,10 @@ jsi::Value CommCoreModule::getUserOneTimeKeys(jsi::Runtime &rt) {
         taskType job = [=, &innerRt]() {
           std::string error;
           std::string result;
-          if (this->cryptoModule == nullptr) {
+          if (this->coreModule->cryptoModule == nullptr) {
             error = "user has not been initialized";
           } else {
-            result = this->cryptoModule->getOneTimeKeys();
+            result = this->coreModule->getUserOneTimeKeys();
           }
           this->jsInvoker_->invokeAsync([=, &innerRt]() {
             if (error.size()) {
@@ -483,7 +423,7 @@ jsi::Value CommCoreModule::getUserOneTimeKeys(jsi::Runtime &rt) {
 }
 
 void CommCoreModule::scheduleOrRun(
-    const std::unique_ptr<WorkerThread> &thread,
+    const std::shared_ptr<WorkerThread> &thread,
     const taskType &task) {
   if (thread != nullptr) {
     thread->scheduleTask(task);
@@ -494,10 +434,10 @@ void CommCoreModule::scheduleOrRun(
 
 void CommCoreModule::initializeThreads() {
   if (this->databaseThread == nullptr) {
-    this->databaseThread = std::make_unique<WorkerThread>("database");
+    this->databaseThread = std::make_shared<WorkerThread>("database");
   }
   if (this->cryptoThread == nullptr) {
-    this->cryptoThread = std::make_unique<WorkerThread>("crypto");
+    this->cryptoThread = std::make_shared<WorkerThread>("crypto");
   }
 }
 
@@ -507,6 +447,7 @@ CommCoreModule::CommCoreModule(
       databaseThread(nullptr),
       cryptoThread(nullptr) {
   this->initializeThreads();
+  this->coreModule = std::make_shared<CoreModuleInternal>();
 };
 
 } // namespace comm
