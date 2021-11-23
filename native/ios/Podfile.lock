@@ -375,20 +375,13 @@ PODS:
     - ExpoModulesCore
     - React-Core
     - UMCore
-  - ExpoModulesCore (0.2.0):
-    - ExpoModulesCore/Core (= 0.2.0)
-    - ExpoModulesCore/Interfaces (= 0.2.0)
-    - UMCore
-  - ExpoModulesCore/Core (0.2.0):
-    - UMCore
-  - ExpoModulesCore/Interfaces (0.2.0):
-    - ExpoModulesCore/Core
-    - UMCore
+  - ExpoModulesCore (0.4.8):
+    - React-Core
   - EXSecureStore (10.2.0):
     - UMCore
-  - EXSplashScreen (0.11.4):
+  - EXSplashScreen (0.13.5):
+    - ExpoModulesCore
     - React-Core
-    - UMCore
   - FBLazyVector (0.64.2)
   - FBReactNativeSpec (0.64.2):
     - RCT-Folly (= 2021.04.26.00)
@@ -933,7 +926,7 @@ DEPENDENCIES:
   - EXImageLoader (from `../../node_modules/expo-image-loader/ios`)
   - EXImageManipulator (from `../../node_modules/expo-image-manipulator/ios`)
   - EXMediaLibrary (from `../../node_modules/expo-media-library/ios`)
-  - ExpoModulesCore (from `../../node_modules/expo-modules-core/ios`)
+  - ExpoModulesCore (from `../../node_modules/expo-splash-screen/node_modules/expo-modules-core/ios`)
   - EXSecureStore (from `../../node_modules/expo-secure-store/ios`)
   - EXSplashScreen (from `../../node_modules/expo-splash-screen/ios`)
   - FBLazyVector (from `../../node_modules/react-native/Libraries/FBLazyVector`)
@@ -1070,7 +1063,7 @@ EXTERNAL SOURCES:
   EXMediaLibrary:
     :path: "../../node_modules/expo-media-library/ios"
   ExpoModulesCore:
-    :path: "../../node_modules/expo-modules-core/ios"
+    :path: "../../node_modules/expo-splash-screen/node_modules/expo-modules-core/ios"
   EXSecureStore:
     :path: "../../node_modules/expo-secure-store/ios"
   EXSplashScreen:
@@ -1218,9 +1211,9 @@ SPEC CHECKSUMS:
   EXImageLoader: d3531a3fe530b22925c19977cb53bb43e3821fe6
   EXImageManipulator: c9af8e8dc6543fdca23693eae280e388b2f93fb0
   EXMediaLibrary: c87254f83db976563e4ee54ee67eeb065570e92b
-  ExpoModulesCore: 2734852616127a6c1fc23012197890a6f3763dc7
+  ExpoModulesCore: a9a9bf32b2da35cd9b7299c80790c03a91ac7d15
   EXSecureStore: 1aa80d49a3a101418bbd2675e2a0d32dceea10c2
-  EXSplashScreen: 847e0d8026731c1090bf269ede3e15ac87d88958
+  EXSplashScreen: 57f329dbf25c5c12800feed79068a056453dc772
   FBLazyVector: e686045572151edef46010a6f819ade377dfeb4b
   FBReactNativeSpec: 00d3c44d268b294f240a43ff003e918ff9f510e2
   Flipper: 41c3f849a45fd5f57a30195d15becb8af7ed78ce
@@ -1307,6 +1300,6 @@ SPEC CHECKSUMS:
   Yoga: 575c581c63e0d35c9a83f4b46d01d63abc1100ac
   YogaKit: f782866e155069a2cca2517aafea43200b01fd5a
 
-PODFILE CHECKSUM: b536adb327922695e02346907a2a6b1e0f400084
+PODFILE CHECKSUM: 2ff3ef8d325af0fae362e34b266aa74a121d75ab
 
 COCOAPODS: 1.11.2
