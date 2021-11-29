@@ -2,13 +2,25 @@
 
 import AsyncStorage from '@react-native-community/async-storage';
 import invariant from 'invariant';
+import _mapKeys from 'lodash/fp/mapKeys';
+import _mapValues from 'lodash/fp/mapValues';
 import { Platform } from 'react-native';
 import Orientation from 'react-native-orientation-locker';
 import { createMigrate } from 'redux-persist';
 
 import { highestLocalIDSelector } from 'lib/selectors/local-id-selectors';
+import {
+  convertRawEntryInfo,
+  convertCalendarQuery,
+} from 'lib/shared/entry-utils';
+import { convertRawMessageInfo } from 'lib/shared/message-utils';
 import { inconsistencyResponsesToReports } from 'lib/shared/report-utils';
-import { getContainingThreadID, getCommunity } from 'lib/shared/thread-utils';
+import {
+  getContainingThreadID,
+  getCommunity,
+  convertRawThreadInfos,
+  convertThreadID,
+} from 'lib/shared/thread-utils';
 import { unshimMessageStore } from 'lib/shared/unshim-utils';
 import { defaultEnabledApps } from 'lib/types/enabled-apps';
 import { defaultCalendarFilters } from 'lib/types/filter-types';
@@ -339,6 +351,52 @@ const migrations = {
       return { ...state, cookie: null };
     }
     return state;
+  },
+  [31]: (state: AppState) => {
+    return {
+      ...state,
+      entryStore: {
+        ...state.entryStore,
+        entryInfos: _mapValues(entryInfo =>
+          convertRawEntryInfo(entryInfo, 'server_to_client'),
+        )(state.entryStore.entryInfos),
+      },
+      threadStore: {
+        ...state.threadStore,
+        threadInfos: convertRawThreadInfos(
+          state.threadStore.threadInfos,
+          'server_to_client',
+        ),
+      },
+      messageStore: {
+        ...state.messageStore,
+        threads: _mapKeys(id => convertThreadID(id, 'server_to_client'))(
+          state.messageStore.threads,
+        ),
+        messages: _mapValues(messageInfo =>
+          convertRawMessageInfo(messageInfo, 'server_to_client'),
+        )(state.messageStore.messages),
+      },
+      threadIDsToNotifIDs: _mapKeys(id =>
+        convertThreadID(id, 'server_to_client'),
+      )(state.threadIDsToNotifIDs),
+      connection: {
+        ...state.connection,
+        actualizedCalendarQuery: convertCalendarQuery(
+          state.connection.actualizedCalendarQuery,
+          'server_to_client',
+        ),
+        queuedActivityUpdates: state.connection.queuedActivityUpdates.map(
+          update => ({
+            ...update,
+            threadID: convertThreadID(update.threadID, 'server_to_client'),
+          }),
+        ),
+      },
+      watchedThreadIDs: state.watchedThreadIDs.map(id =>
+        convertThreadID(id, 'server_to_client'),
+      ),
+    };
   },
 };
 
