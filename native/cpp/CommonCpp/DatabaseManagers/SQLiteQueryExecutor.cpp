@@ -221,6 +221,28 @@ bool update_threadID_for_pending_threads_in_drafts(sqlite3 *db) {
   return false;
 }
 
+bool use_new_threadID_schema_in_drafts(sqlite3 *db) {
+  char *error;
+  sqlite3_exec(
+      db,
+      "UPDATE drafts_1 SET key = '00001|' || key "
+      "WHERE instr(key, 'pending') IS 0;",
+      nullptr,
+      nullptr,
+      &error);
+
+  if (!error) {
+    return true;
+  }
+
+  std::ostringstream stringStream;
+  stringStream << "Error update threadID schema on drafts table: " << error;
+  Logger::log(stringStream.str());
+
+  sqlite3_free(error);
+  return false;
+}
+
 typedef std::function<bool(sqlite3 *)> MigrationFunction;
 std::vector<std::pair<uint, MigrationFunction>> migrations{
     {{1, create_drafts_table},
@@ -233,7 +255,8 @@ std::vector<std::pair<uint, MigrationFunction>> migrations{
      {18, create_messages_idx_thread_time},
      {19, create_media_idx_container},
      {20, create_threads_table},
-     {21, update_threadID_for_pending_threads_in_drafts}}};
+     {21, update_threadID_for_pending_threads_in_drafts},
+     {22, use_new_threadID_schema_in_drafts}}};
 
 void SQLiteQueryExecutor::migrate() {
   sqlite3 *db;
