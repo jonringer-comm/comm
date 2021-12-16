@@ -3,7 +3,6 @@
 import { dbQuery, SQL } from '../database/database';
 // import { createTable, addNameIndex } from '../scripts/test1';
 // import { alterTable } from '../scripts/test2';
-import { endScript } from '../scripts/utils';
 
 const migrations: $ReadOnlyMap<number, () => Promise<void>> = new Map([
   // [1, createTable],
@@ -21,10 +20,10 @@ async function createDbVersionEntry() {
       )
     AS TEMP
     WHERE NOT EXISTS (
-	    SELECT name
+      SELECT name
       FROM metadata
       WHERE name = 'db_version'
-	  ) LIMIT 1
+    ) LIMIT 1
     `;
   await dbQuery(insertQuery);
 }
@@ -37,7 +36,7 @@ async function getDbVersion() {
   `;
   const [[versionResult]] = await dbQuery(versionQuery);
   const dbVersion = versionResult.data;
-  console.log('db version: ' + dbVersion);
+  console.log('(node:' + process.pid + ') db schema version: ' + dbVersion);
   return dbVersion;
 }
 
@@ -71,7 +70,7 @@ async function migrate() {
     try {
       await value();
     } catch (e) {
-      console.error('migration ' + key + ' failed.');
+      console.error('(node:' + process.pid + ') migration ' + key + ' failed.');
       console.error(e);
       const rollbackTransaction = SQL`
         ROLLBACK
@@ -85,14 +84,13 @@ async function migrate() {
       COMMIT
     `;
     await dbQuery(endTransaction);
-    console.log('migration ' + key + ' succeeded.');
+    console.log('(node:' + process.pid + ') migration ' + key + ' succeeded.');
 
     const turnOnAutocommit = SQL`
       SET autocommit = 1;
     `;
     await dbQuery(turnOnAutocommit);
   }
-  endScript();
 }
 
-migrate();
+export default migrate;
