@@ -1,0 +1,98 @@
+// @flow
+
+import { dbQuery, SQL } from '../database/database';
+// import { createTable, addNameIndex } from '../scripts/test1';
+// import { alterTable } from '../scripts/test2';
+import { endScript } from '../scripts/utils';
+
+const migrations: $ReadOnlyMap<number, () => Promise<void>> = new Map([
+  // [1, createTable],
+  // [2, addNameIndex],
+  // [3, alterTable],
+]);
+
+async function createDbVersionEntry() {
+  const insertQuery = SQL`
+    INSERT INTO metadata (name,data)
+    SELECT *
+    FROM (
+      SELECT 'db_version' AS name,
+      0 AS data
+      )
+    AS TEMP
+    WHERE NOT EXISTS (
+	    SELECT name
+      FROM metadata
+      WHERE name = 'db_version'
+	  ) LIMIT 1
+    `;
+  await dbQuery(insertQuery);
+}
+
+async function getDbVersion() {
+  const versionQuery = SQL`
+    SELECT data
+    FROM metadata
+    WHERE name = 'db_version';
+  `;
+  const [[versionResult]] = await dbQuery(versionQuery);
+  const dbVersion = versionResult.data;
+  console.log('db version: ' + dbVersion);
+  return dbVersion;
+}
+
+async function updateDbVersion(dbVersion: number) {
+  const updateQuery = SQL`
+    UPDATE metadata
+    SET data = ${dbVersion}
+    WHERE name = 'db_version';
+      `;
+  await dbQuery(updateQuery);
+}
+
+async function migrate() {
+  await createDbVersionEntry();
+  const dbVersion = await getDbVersion();
+
+  for (const [key, value] of migrations.entries()) {
+    if (key <= dbVersion) {
+      continue;
+    }
+
+    const turnOffAutocommit = SQL`
+      SET autocommit = 0;
+    `;
+    await dbQuery(turnOffAutocommit);
+    const beginTransaction = SQL`
+      START TRANSACTION
+      `;
+    await dbQuery(beginTransaction);
+
+    try {
+      await value();
+    } catch (e) {
+      console.error('migration ' + key + ' failed.');
+      console.error(e);
+      const rollbackTransaction = SQL`
+        ROLLBACK
+      `;
+      await dbQuery(rollbackTransaction);
+      break;
+    }
+
+    await updateDbVersion(key);
+    const endTransaction = SQL`
+      COMMIT
+    `;
+    await dbQuery(endTransaction);
+    console.log('migration ' + key + ' succeeded.');
+
+    const turnOnAutocommit = SQL`
+      SET autocommit = 1;
+    `;
+    await dbQuery(turnOnAutocommit);
+  }
+  endScript();
+}
+
+migrate();
