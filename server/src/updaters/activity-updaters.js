@@ -27,7 +27,6 @@ import {
 import { rescindPushNotifs } from '../push/rescind';
 import { updateBadgeCount } from '../push/send';
 import type { Viewer } from '../session/viewer';
-import { earliestFocusedTimeConsideredCurrent } from '../shared/focused-times';
 
 type PartialThreadStatus = {
   +focusActive: boolean,
@@ -337,12 +336,10 @@ async function checkThreadsFocused(
   viewer: Viewer,
   threadIDs: $ReadOnlyArray<string>,
 ): Promise<string[]> {
-  const time = earliestFocusedTimeConsideredCurrent();
   const query = SQL`
     SELECT thread
     FROM focused
-    WHERE time > ${time}
-      AND user = ${viewer.userID}
+    WHERE user = ${viewer.userID}
       AND thread IN (${threadIDs})
     GROUP BY thread
   `;
