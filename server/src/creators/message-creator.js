@@ -32,7 +32,6 @@ import { fetchServerThreadInfos } from '../fetchers/thread-fetchers';
 import { sendPushNotifs } from '../push/send';
 import { handleAsyncPromise } from '../responders/handlers';
 import type { Viewer } from '../session/viewer';
-import { earliestFocusedTimeConsideredCurrent } from '../shared/focused-times';
 import { publisher } from '../socket/redis';
 import { creationString } from '../utils/idempotent';
 import createIDs from './id-creator';
@@ -279,7 +278,6 @@ async function postMessageSend(
     subthreadJoins.push(join);
   }
 
-  const time = earliestFocusedTimeConsideredCurrent();
   const visibleExtractString = `$.${threadPermissions.VISIBLE}.value`;
   const query = SQL`
     SELECT m.user, m.thread, c.platform, c.device_token, c.versions,
@@ -290,7 +288,6 @@ async function postMessageSend(
     FROM memberships m
     LEFT JOIN cookies c ON c.user = m.user AND c.device_token IS NOT NULL
     LEFT JOIN focused f ON f.user = m.user AND f.thread = m.thread
-      AND f.time > ${time}
   `);
   appendSQLArray(query, subthreadJoins, SQL` `);
   query.append(SQL`
