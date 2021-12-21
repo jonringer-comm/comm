@@ -11,12 +11,12 @@
 #import <UMReactNativeAdapter/UMModuleRegistryAdapter.h>
 #import <UMReactNativeAdapter/UMNativeModulesProxy.h>
 
+#import <React/JSCExecutorFactory.h>
 #import <React/RCTBridge+Private.h>
 #import <React/RCTCxxBridgeDelegate.h>
 #import <React/RCTJSIExecutorRuntimeInstaller.h>
 #import <cxxreact/JSExecutor.h>
 #import <jsireact/JSIExecutor.h>
-#import <reacthermes/HermesExecutorFactory.h>
 
 #import <EXSecureStore/EXSecureStore.h>
 
@@ -195,7 +195,7 @@ extern RCTBridge *_bridge_reanimated;
 #endif
 }
 
-using ExecutorFactory = facebook::react::HermesExecutorFactory;
+using ExecutorFactory = facebook::react::JSCExecutorFactory;
 using Runtime = facebook::jsi::Runtime;
 
 - (std::unique_ptr<ExecutorFactory>)jsExecutorFactoryForBridge:
@@ -238,32 +238,31 @@ using Runtime = facebook::jsi::Runtime;
   };
 
   return std::make_unique<ExecutorFactory>(
-      facebook::react::RCTJSIExecutorRuntimeInstaller(executor),
-      JSIExecutor::defaultTimeoutInvoker,
-      makeRuntimeConfig(1024));
+      facebook::react::RCTJSIExecutorRuntimeInstaller(executor));
 }
 
 // Copied from
 // ReactAndroid/src/main/java/com/facebook/hermes/reactexecutor/OnLoad.cpp
-static ::hermes::vm::RuntimeConfig
-makeRuntimeConfig(::hermes::vm::gcheapsize_t heapSizeMB) {
-  namespace vm = ::hermes::vm;
-  auto gcConfigBuilder =
-      vm::GCConfig::Builder()
-          .withName("RN")
-          // For the next two arguments: avoid GC before TTI by initializing the
-          // runtime to allocate directly in the old generation, but revert to
-          // normal operation when we reach the (first) TTI point.
-          .withAllocInYoung(false)
-          .withRevertToYGAtTTI(true);
-
-  if (heapSizeMB > 0) {
-    gcConfigBuilder.withMaxHeapSize(heapSizeMB << 20);
-  }
-
-  return vm::RuntimeConfig::Builder()
-      .withGCConfig(gcConfigBuilder.build())
-      .build();
-}
+// static ::hermes::vm::RuntimeConfig
+// makeRuntimeConfig(::hermes::vm::gcheapsize_t heapSizeMB) {
+//  namespace vm = ::hermes::vm;
+//  auto gcConfigBuilder =
+//      vm::GCConfig::Builder()
+//          .withName("RN")
+//          // For the next two arguments: avoid GC before TTI by initializing
+//          the
+//          // runtime to allocate directly in the old generation, but revert to
+//          // normal operation when we reach the (first) TTI point.
+//          .withAllocInYoung(false)
+//          .withRevertToYGAtTTI(true);
+//
+//  if (heapSizeMB > 0) {
+//    gcConfigBuilder.withMaxHeapSize(heapSizeMB << 20);
+//  }
+//
+//  return vm::RuntimeConfig::Builder()
+//      .withGCConfig(gcConfigBuilder.build())
+//      .build();
+//}
 
 @end
