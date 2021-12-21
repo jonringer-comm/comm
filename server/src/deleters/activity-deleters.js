@@ -2,7 +2,6 @@
 
 import { dbQuery, SQL } from '../database/database';
 import type { Viewer } from '../session/viewer';
-import { earliestFocusedTimeConsideredExpired } from '../shared/focused-times';
 
 async function deleteActivityForViewerSession(
   viewer: Viewer,
@@ -19,14 +18,13 @@ async function deleteActivityForViewerSession(
 }
 
 async function deleteOrphanedActivity(): Promise<void> {
-  const time = earliestFocusedTimeConsideredExpired();
   await dbQuery(SQL`
     DELETE f
     FROM focused f
     LEFT JOIN threads t ON t.id = f.thread
     LEFT JOIN users u ON u.id = f.user
     LEFT JOIN sessions s ON s.id = f.session
-    WHERE t.id IS NULL OR u.id IS NULL OR s.id IS NULL OR f.time <= ${time}
+    WHERE t.id IS NULL OR u.id IS NULL OR s.id IS NULL
   `);
 }
 
