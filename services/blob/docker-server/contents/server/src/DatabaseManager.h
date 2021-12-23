@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DatabaseEntities.h"
+#include "DatabaseEntitiesTools.h"
 
 #include <aws/core/Aws.h>
 #include <aws/dynamodb/model/AttributeDefinition.h>
@@ -23,16 +23,23 @@ class DatabaseManager {
   std::shared_ptr<Item> innerFindItem(
       Aws::DynamoDB::Model::GetItemRequest &request,
       const ItemType &itemType);
+  void innerRemoveItem(const std::string &key, const ItemType &itemType);
 
 public:
   static DatabaseManager &getInstance();
 
   void putBlobItem(const BlobItem &item);
   std::shared_ptr<BlobItem> findBlobItem(const std::string &fileHash);
+  void removeBlobItem(const std::string &fileHash);
 
   void putReverseIndexItem(const ReverseIndexItem &item);
   std::shared_ptr<ReverseIndexItem>
   findReverseIndexItemByReverseIndex(const std::string &reverseIndex);
+  std::vector<std::shared_ptr<database::ReverseIndexItem>>
+  findReverseIndexItemsByHash(const std::string &fileHash);
+  void removeReverseIndexItem(const std::string &reverseIndex);
+
+  std::vector<std::string> getAllHashes();
 };
 
 } // namespace database
