@@ -37,6 +37,10 @@ public:
   Get(grpc::ServerContext *context,
       const blob::GetRequest *request,
       grpc::ServerWriter<blob::GetResponse> *writer);
+  grpc::Status Remove(
+      grpc::ServerContext *context,
+      const blob::RemoveRequest *request,
+      google::protobuf::Empty *response);
 };
 
 } // namespace network
