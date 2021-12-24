@@ -7,6 +7,7 @@ import expressWs from 'express-ws';
 import os from 'os';
 
 import './cron/cron';
+// import migrate from './database/migrations';
 import { jsonEndpoints } from './endpoints';
 import { emailSubscriptionResponder } from './responders/comm-landing-responders';
 import {
@@ -35,6 +36,7 @@ const { baseRoutePath } = getGlobalURLFacts();
 const landingBaseRoutePath = getLandingURLFacts().baseRoutePath;
 
 if (cluster.isMaster) {
+  // migrate();
   const cpuCount = os.cpus().length;
   for (let i = 0; i < cpuCount; i++) {
     cluster.fork();
