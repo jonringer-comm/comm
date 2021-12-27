@@ -1,8 +1,10 @@
+Cargo.lock
 .DS_Store
 node_modules
 landing/node_modules
 landing/dist
 lib/node_modules
+native/cpp/CommonCpp/CryptoTools/opaque-ke-ffi/target
 web/node_modules
 web/dist
 server/dist
