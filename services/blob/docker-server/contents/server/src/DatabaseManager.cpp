@@ -87,6 +87,77 @@ DatabaseManager::findReverseIndexItemByReverseIndex(
   return std::move(this->innerFindItem<ReverseIndexItem>(request));
 }
 
+std::vector<std::shared_ptr<database::ReverseIndexItem>>
+DatabaseManager::findReverseIndexItemsByHash(const std::string &fileHash) {
+  std::vector<std::shared_ptr<database::ReverseIndexItem>> result;
+
+  Aws::DynamoDB::Model::QueryRequest req;
+  req.SetTableName(ReverseIndexItem::tableName);
+  req.SetKeyConditionExpression("fileHash = :valueToMatch");
+
+  AttributeValues attributeValues;
+  attributeValues.emplace(":valueToMatch", fileHash);
+
+  req.SetExpressionAttributeValues(attributeValues);
+  req.SetIndexName("fileHash-index");
+
+  const Aws::DynamoDB::Model::QueryOutcome &outcome =
+      AwsObjectsFactory::getDynamoDBClient()->Query(req);
+  if (!outcome.IsSuccess()) {
+    throw std::runtime_error(outcome.GetError().GetMessage());
+  }
+  const Aws::Vector<AttributeValues> &items = outcome.GetResult().GetItems();
+  for (auto &item : items) {
+    result.push_back(std::make_shared<database::ReverseIndexItem>(item));
+  }
+
+  return result;
+}
+
+void DatabaseManager::removeReverseIndexItem(const std::string &reverseIndex) {
+  std::shared_ptr<database::ReverseIndexItem> item =
+      findReverseIndexItemByReverseIndex(reverseIndex);
+  if (item == nullptr) {
+    throw std::runtime_error(std::string(
+        "no reverse index item found for reverse index " + reverseIndex));
+  }
+  this->innerRemoveItem<ReverseIndexItem>(item->getReverseIndex());
+}
+
+// we should pay attention how this is going to scale
+std::vector<std::string> DatabaseManager::getAllHashes() {
+  Aws::DynamoDB::Model::ScanRequest req;
+  req.SetTableName(BlobItem::tableName);
+
+  std::vector<std::string> result;
+
+  // Perform scan on table
+  const Aws::DynamoDB::Model::ScanOutcome &outcome =
+      AwsObjectsFactory::getDynamoDBClient()->Scan(req);
+  if (!outcome.IsSuccess()) {
+    throw std::runtime_error(outcome.GetError().GetMessage());
+  }
+  // Reference the retrieved items
+  const Aws::Vector<AttributeValues> &retreivedItems =
+      outcome.GetResult().GetItems();
+  // std::cout << "Number of items retrieved from scan: " << items.size() <<
+  // std::endl;
+  // Iterate each item and print
+  for (const auto &retreivedItem : retreivedItems) {
+    // std::cout << "******************************************************" <<
+    // std::endl; Output each retrieved field and its value
+    BlobItem item(retreivedItem);
+    result.push_back(item.getFileHash());
+    // for (const auto &itemData : item) {
+    //   // std::cout << i.first << ": " << i.second.GetS() << std::endl;
+    //   if (itemData.first == "fileHash") {
+    //     result.push_back(itemData.second.GetS());
+    //   }
+    // }
+  }
+  return result;
+}
+
 } // namespace database
 } // namespace network
 } // namespace comm
