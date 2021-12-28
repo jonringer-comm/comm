@@ -26,6 +26,13 @@ class DatabaseManager {
 
 public:
   static DatabaseManager &getInstance();
+
+  void putBlobItem(const BlobItem &item);
+  std::shared_ptr<BlobItem> findBlobItem(const std::string &fileHash);
+
+  void putReverseIndexItem(const ReverseIndexItem &item);
+  std::shared_ptr<ReverseIndexItem>
+  findReverseIndexItemByReverseIndex(const std::string &reverseIndex);
 };
 
 } // namespace database
