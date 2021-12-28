@@ -56,6 +56,10 @@ DatabaseManager::findBlobItem(const std::string &fileHash) {
   return std::move(this->innerFindItem<BlobItem>(request));
 }
 
+void DatabaseManager::removeBlobItem(const std::string &fileHash) {
+  this->innerRemoveItem<BlobItem>(fileHash);
+}
+
 void DatabaseManager::putReverseIndexItem(const ReverseIndexItem &item) {
   if (this->findReverseIndexItemByReverseIndex(item.getReverseIndex()) !=
       nullptr) {
