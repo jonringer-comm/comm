@@ -30,7 +30,7 @@ void BlobServiceImpl::putHandleHashes(
     const std::string &expectedFileHash,
     const database::S3Path &s3Path) {
   const std::string computedFileHash =
-      expectedFileHash; // this->computeHashForFile(*s3Path); // TODO FIX THIS
+      Tools::getInstance().computeHashForFile(s3Path);
   if (expectedFileHash != computedFileHash) {
     std::string errorMessage = "fileHash mismatch, expected: [";
     errorMessage +=
