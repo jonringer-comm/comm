@@ -31,6 +31,10 @@ public:
   Put(grpc::ServerContext *context,
       grpc::ServerReader<blob::PutRequest> *reader,
       google::protobuf::Empty *response);
+  grpc::Status
+  Get(grpc::ServerContext *context,
+      const blob::GetRequest *request,
+      grpc::ServerWriter<blob::GetResponse> *writer);
 };
 
 } // namespace network
