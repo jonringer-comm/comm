@@ -196,5 +196,46 @@ grpc::Status BlobServiceImpl::Get(
   return grpc::Status::OK;
 }
 
+/*
+(findReverseIndexItemByReverseIndex)- search for the file fileHash by the
+reverse index (removeReverseIndexItem)- remove the current reverse index
+*/
+grpc::Status BlobServiceImpl::Remove(
+    grpc::ServerContext *context,
+    const blob::RemoveRequest *request,
+    google::protobuf::Empty *response) {
+  const std::string reverseIndex = request->reverseindex();
+  try {
+    std::shared_ptr<database::ReverseIndexItem> reverseIndexItem =
+        database::DatabaseManager::getInstance()
+            .findReverseIndexItemByReverseIndex(reverseIndex);
+    if (reverseIndexItem == nullptr) {
+      std::string errorMessage = "no item found for reverse index: ";
+      errorMessage += reverseIndex;
+      throw std::runtime_error(errorMessage);
+    }
+    // TODO handle cleanup here properly
+    // for now the object's being removed right away
+    const std::string fileHash = reverseIndexItem->getFileHash();
+    database::DatabaseManager::getInstance().removeReverseIndexItem(
+        reverseIndex);
+    if (database::DatabaseManager::getInstance()
+            .findReverseIndexItemsByHash(reverseIndexItem->getFileHash())
+            .size() == 0) {
+      database::S3Path s3Path =
+          Tools::getInstance().findS3Path(*reverseIndexItem);
+      AwsS3Bucket bucket =
+          AwsStorageManager::getInstance().getBucket(s3Path.getBucketName());
+      bucket.removeObject(s3Path.getObjectName());
+
+      database::DatabaseManager::getInstance().removeBlobItem(fileHash);
+    }
+  } catch (std::runtime_error &e) {
+    std::cout << "error: " << e.what() << std::endl;
+    return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
+  }
+  return grpc::Status::OK;
+}
+
 } // namespace network
 } // namespace comm
