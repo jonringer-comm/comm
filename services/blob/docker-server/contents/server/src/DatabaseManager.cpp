@@ -84,6 +84,43 @@ DatabaseManager::findReverseIndexItemByReverseIndex(
   return std::move(this->innerFindItem<ReverseIndexItem>(request));
 }
 
+std::vector<std::shared_ptr<database::ReverseIndexItem>>
+DatabaseManager::findReverseIndexItemsByHash(const std::string &fileHash) {
+  std::vector<std::shared_ptr<database::ReverseIndexItem>> result;
+
+  Aws::DynamoDB::Model::QueryRequest req;
+  req.SetTableName(ReverseIndexItem::tableName);
+  req.SetKeyConditionExpression("fileHash = :valueToMatch");
+
+  AttributeValues attributeValues;
+  attributeValues.emplace(":valueToMatch", fileHash);
+
+  req.SetExpressionAttributeValues(attributeValues);
+  req.SetIndexName("fileHash-index");
+
+  const Aws::DynamoDB::Model::QueryOutcome &outcome =
+      AwsObjectsFactory::getDynamoDBClient()->Query(req);
+  if (!outcome.IsSuccess()) {
+    throw std::runtime_error(outcome.GetError().GetMessage());
+  }
+  const Aws::Vector<AttributeValues> &items = outcome.GetResult().GetItems();
+  for (auto &item : items) {
+    result.push_back(std::make_shared<database::ReverseIndexItem>(item));
+  }
+
+  return result;
+}
+
+void DatabaseManager::removeReverseIndexItem(const std::string &reverseIndex) {
+  std::shared_ptr<database::ReverseIndexItem> item =
+      findReverseIndexItemByReverseIndex(reverseIndex);
+  if (item == nullptr) {
+    throw std::runtime_error(std::string(
+        "no reverse index item found for reverse index " + reverseIndex));
+  }
+  this->innerRemoveItem<ReverseIndexItem>(item->getReverseIndex());
+}
+
 } // namespace database
 } // namespace network
 } // namespace comm
