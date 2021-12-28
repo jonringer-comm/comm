@@ -1,6 +1,7 @@
 #include "Tools.h"
 
 #include "DatabaseEntitiesTools.h"
+#include "DatabaseManager.h"
 
 #include <chrono>
 
@@ -16,6 +17,41 @@ database::S3Path Tools::generateS3Path(
 
 std::string Tools::computeHashForFile(const database::S3Path &s3Path) {
   return database::BlobItem::FIELD_FILE_HASH; // TODO
+}
+
+database::S3Path Tools::findS3Path(const std::string &reverseIndex) {
+  std::shared_ptr<database::ReverseIndexItem> reverseIndexItem =
+      database::DatabaseManager::getInstance()
+          .findReverseIndexItemByReverseIndex(reverseIndex);
+  if (reverseIndexItem == nullptr) {
+    std::string errorMessage = "provided reverse index: [";
+    errorMessage += reverseIndex + "] has not been found in the database";
+    throw std::runtime_error(errorMessage);
+  }
+  std::shared_ptr<database::BlobItem> blobItem =
+      database::DatabaseManager::getInstance().findBlobItem(
+          reverseIndexItem->getFileHash());
+  if (blobItem == nullptr) {
+    std::string errorMessage = "no blob found for fileHash: [";
+    errorMessage += reverseIndexItem->getFileHash() + "]";
+    throw std::runtime_error(errorMessage);
+  }
+  database::S3Path result = blobItem->getS3Path();
+  return result;
+}
+
+database::S3Path
+Tools::findS3Path(const database::ReverseIndexItem &reverseIndexItem) {
+  std::shared_ptr<database::BlobItem> blobItem =
+      database::DatabaseManager::getInstance().findBlobItem(
+          reverseIndexItem.getFileHash());
+  if (blobItem == nullptr) {
+    std::string errorMessage = "no blob found for fileHash: [";
+    errorMessage += reverseIndexItem.getFileHash() + "]";
+    throw std::runtime_error(errorMessage);
+  }
+  database::S3Path result = blobItem->getS3Path();
+  return result;
 }
 
 long long Tools::getCurrentTimestamp() {
