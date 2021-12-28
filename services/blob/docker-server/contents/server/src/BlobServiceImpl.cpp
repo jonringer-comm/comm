@@ -30,7 +30,7 @@ void BlobServiceImpl::putHandleHashes(
     const std::string &expectedFileHash,
     const database::S3Path &s3Path) {
   const std::string computedFileHash =
-      expectedFileHash; // this->computeHashForFile(*s3Path); // TODO FIX THIS
+      Tools::getInstance().computeHashForFile(s3Path);
   if (expectedFileHash != computedFileHash) {
     std::string errorMessage = "fileHash mismatch, expected: [";
     errorMessage +=
@@ -138,7 +138,7 @@ grpc::Status BlobServiceImpl::Put(
     std::cout << "finish uploader" << std::endl;
     uploader->finishUpload();
     // // compute a fileHash and verify with a provided fileHash
-    putHandleHashes(receivedFileHash, *s3Path);
+    this->putHandleHashes(receivedFileHash, *s3Path);
     // putBlobItem - store a fileHash and a path in the DB
     if (blobItem == nullptr) {
       blobItem =
