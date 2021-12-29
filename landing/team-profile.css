@@ -1,0 +1,13 @@
+.profile img {
+  border-radius: 50%;
+  max-width: 200px;
+  padding-bottom: 8px;
+}
+
+.profile > a + a {
+  padding-left: 12px;
+}
+
+.profile > a {
+  color: var(--white);
+}
