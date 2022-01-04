@@ -48,7 +48,13 @@ class ThreadSettingsPushNotifs extends React.PureComponent<Props, State> {
   render() {
     return (
       <View style={this.props.styles.row}>
-        <Text style={this.props.styles.label}>Push notifs</Text>
+        <Text
+          style={this.props.styles.label}
+          adjustsFontSizeToFit={true}
+          numberOfLines={1}
+        >
+          Push notifs
+        </Text>
         <View style={this.props.styles.currentValue}>
           <Switch
             value={this.state.currentValue}
@@ -76,7 +82,6 @@ class ThreadSettingsPushNotifs extends React.PureComponent<Props, State> {
 const unboundStyles = {
   currentValue: {
     alignItems: 'flex-end',
-    flex: 1,
     margin: 0,
     paddingLeft: 4,
     paddingRight: 0,
@@ -85,7 +90,7 @@ const unboundStyles = {
   label: {
     color: 'panelForegroundTertiaryLabel',
     fontSize: 16,
-    width: 96,
+    flex: 1,
   },
   row: {
     alignItems: 'center',
